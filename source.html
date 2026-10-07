@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#050816" />
+  <meta name="description" content="MyCards — UzCard, Humo va Visa kartalarini bitta xavfsiz hubda boshqarish." />
+  <title>MyCards — Secure Card Hub</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <div class="ambient__orb ambient__orb--cyan"></div>
+    <div class="ambient__orb ambient__orb--pink"></div>
+    <div class="ambient__grid"></div>
+    <div class="ambient__city"></div>
+  </div>
+
+  <main class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand__mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div>
+          <strong>MyCards</strong>
+          <small>Secure. Simple. Yours.</small>
+        </div>
+      </div>
+
+      <nav class="side-nav" aria-label="Asosiy navigatsiya">
+        <button class="nav-item is-active" data-view="home" type="button">
+          <span class="nav-ico">⌂</span><span>Bosh sahifa</span>
+        </button>
+        <div class="nav-label">Kartalar</div>
+        <button class="nav-item nav-item--uzcard" data-view="uzcard" type="button">
+          <span class="brand-mini">U</span><span>UzCard</span><span class="nav-count" id="countUzcard">0</span>
+        </button>
+        <button class="nav-item nav-item--humo" data-view="humo" type="button">
+          <span class="brand-mini brand-mini--humo">H</span><span>Humo</span><span class="nav-count" id="countHumo">0</span>
+        </button>
+        <button class="nav-item nav-item--visa" data-view="visa" type="button">
+          <span class="brand-mini brand-mini--visa">VISA</span><span>Visa</span><span class="nav-count" id="countVisa">0</span>
+        </button>
+        <div class="nav-separator"></div>
+        <button class="nav-item" id="openAddCardSide" type="button">
+          <span class="nav-ico">+</span><span>Karta qo‘shish</span>
+        </button>
+        <button class="nav-item" data-view="settings" type="button">
+          <span class="nav-ico">⚙</span><span>Sozlamalar</span>
+        </button>
+      </nav>
+
+      <div class="security-note">
+        <div class="security-note__icon">✓</div>
+        <div>
+          <strong>Ma’lumotlaringiz shifrlanadi</strong>
+          <p>AES-GCM + PBKDF2. Vault paroli qurilmadan tashqariga yuborilmaydi.</p>
+        </div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <button class="icon-btn mobile-menu" id="mobileMenuBtn" type="button" aria-label="Menyuni ochish">☰</button>
+        <label class="search-box">
+          <span>⌕</span>
+          <input id="searchInput" type="search" placeholder="Kartalarni qidirish..." autocomplete="off" />
+          <kbd>⌘ K</kbd>
+        </label>
+
+        <div class="topbar__actions">
+          <button class="icon-btn" id="lockNowBtn" type="button" aria-label="Vaultni qulflash" title="Vaultni qulflash">⌁</button>
+          <button class="profile-pill" id="authBtn" type="button">
+            <span class="avatar" id="profileAvatar">S</span>
+            <span class="profile-copy"><strong id="profileName">Shox</strong><small id="profileStatus">Local vault</small></span>
+            <span class="chev">⌄</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="content" id="content"></div>
+    </section>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Mobil navigatsiya">
+    <button data-view="home" class="is-active"><span>⌂</span><small>Bosh sahifa</small></button>
+    <button data-view="uzcard"><span>U</span><small>UzCard</small></button>
+    <button data-view="humo"><span>H</span><small>Humo</small></button>
+    <button data-view="visa"><span>VISA</span><small>Visa</small></button>
+    <button data-view="settings"><span>⚙</span><small>Sozlamalar</small></button>
+  </nav>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <!-- Lock / onboarding -->
+  <dialog class="modal modal--small" id="vaultModal">
+    <form method="dialog" class="modal-card" id="vaultForm">
+      <div class="modal-glow"></div>
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">MYCARDS VAULT</span>
+          <h2 id="vaultTitle">Vaultni ochish</h2>
+        </div>
+      </div>
+      <p class="modal-lead" id="vaultLead">Kartalaringiz shifrlangan. Davom etish uchun vault parolini kiriting.</p>
+      <label class="field">
+        <span>Vault paroli</span>
+        <div class="field-row">
+          <input id="vaultPassword" type="password" minlength="8" required autocomplete="current-password" placeholder="Kamida 8 ta belgi" />
+          <button class="mini-btn" type="button" data-toggle-password="#vaultPassword">Ko‘rish</button>
+        </div>
+      </label>
+      <label class="field is-hidden" id="vaultConfirmField">
+        <span>Parolni takrorlang</span>
+        <input id="vaultPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Parolni qayta kiriting" />
+      </label>
+      <p class="security-warning">Parol unutilsa, shifrlangan kartalarni tiklab bo‘lmaydi. MyCards parolni saqlamaydi.</p>
+      <div class="modal-actions modal-actions--vault">
+        <button class="btn btn--ghost is-hidden" id="vaultGoogleBtn" type="button">Google cloud vault</button>
+        <button class="btn btn--ghost" id="demoModeBtn" type="button">Demo rejim</button>
+        <button class="btn btn--primary" id="vaultSubmitBtn" type="button">Ochish</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add/Edit card -->
+  <dialog class="modal" id="cardModal">
+    <form method="dialog" class="modal-card" id="cardForm">
+      <div class="modal-glow"></div>
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">YANGI KARTA</span>
+          <h2 id="cardModalTitle">Karta qo‘shish</h2>
+        </div>
+        <button class="modal-close" type="button" data-close-card aria-label="Yopish">×</button>
+      </div>
+
+      <div class="type-picker" id="typePicker">
+        <button type="button" data-type="uzcard" class="is-active">UzCard</button>
+        <button type="button" data-type="humo">Humo</button>
+        <button type="button" data-type="visa">Visa</button>
+      </div>
+
+      <input type="hidden" id="editCardId" />
+      <input type="hidden" id="cardType" value="uzcard" />
+
+      <label class="field">
+        <span>Karta raqami</span>
+        <input id="cardNumber" inputmode="numeric" maxlength="19" required placeholder="8600 1234 5678 1234" autocomplete="off" />
+      </label>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>Amal qilish muddati</span>
+          <input id="cardExpiry" inputmode="numeric" maxlength="5" required placeholder="MM/YY" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Karta nomi</span>
+          <input id="cardLabel" maxlength="28" placeholder="Masalan: Asosiy" autocomplete="off" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Karta egasi</span>
+        <input id="cardHolder" maxlength="32" placeholder="SHOKH KASIMOV" autocomplete="off" />
+      </label>
+
+      <p class="security-warning">CVV va PIN bu ilovada saqlanmaydi. Karta raqami vault ichida AES-GCM bilan shifrlanadi.</p>
+
+      <p id="cardFormError" class="form-error" role="alert" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button class="btn btn--ghost" type="button" data-close-card>Bekor qilish</button>
+        <button class="btn btn--primary" id="saveCardBtn" type="button">Saqlash</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal modal--design" id="designModal">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="eyebrow">KARTA DIZAYNI</span><h2 id="designTitle">Karta dizayni</h2></div><button class="modal-close" type="button" data-close-design aria-label="Yopish">×</button></div>
+      <div class="design-preview" id="designPreview"></div>
+      <div class="design-controls">
+        <label class="field"><span>Animatsiya</span><select id="designPreset"><option value="default">Neon yaltirash</option><option value="aurora">Aurora</option><option value="flow">Ranglar oqimi</option><option value="pulse">Neon puls</option><option value="still">Yaltirashsiz</option></select></label>
+        <label class="field"><span>Animatsiya davri <output id="designSpeedValue">8s</output></span><input id="designSpeed" type="range" min="2" max="16" value="8" /></label>
+        <label class="field"><span>Fon qorayishi <output id="designShadeValue">35%</output></span><input id="designShade" type="range" min="0" max="85" value="35" /></label>
+      </div>
+      <div class="design-upload"><label class="field"><span>O‘z foningizni yuklang · har bir karta uchun alohida</span><input id="designFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/webm,video/mp4" /></label><p>PNG, JPG, WebP, GIF yoki WebM/MP4 · 300 KB gacha. Video ovozsiz takrorlanadi.</p><small id="designFileName">Hali fayl tanlanmagan</small><button class="mini-btn" id="removeDesignFileBtn" type="button">Yuklangan fonni olib tashlash</button></div>
+      <p id="designError" class="form-error" role="alert" aria-live="polite"></p>
+      <div class="modal-actions"><button class="btn btn--ghost" type="button" id="resetDesignBtn">Standartga qaytarish</button><button class="btn btn--ghost" type="button" data-close-design>Bekor qilish</button><button class="btn btn--primary" type="button" id="saveDesignBtn">Dizaynni saqlash</button></div>
+    </div>
+  </dialog>
+
+  <!-- Reveal card -->
+  <dialog class="modal modal--small" id="revealModal">
+    <div class="modal-card">
+      <div class="modal-glow"></div>
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">KARTA MA’LUMOTLARI</span>
+          <h2>Vaqtincha ochildi</h2>
+        </div>
+        <button class="modal-close" id="closeRevealBtn" type="button">×</button>
+      </div>
+      <div class="reveal-box">
+        <span>Karta raqami</span>
+        <strong id="revealNumber">•••• •••• •••• ••••</strong>
+        <button class="btn btn--ghost" id="revealCopyBtn" type="button">Nusxalash</button>
+      </div>
+      <div class="reveal-meta">
+        <div><span>Amal qilish muddati</span><strong id="revealExpiry">--/--</strong></div>
+        <div><span>Yopilish</span><strong id="revealTimer">10s</strong></div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal modal--small" id="deleteModal">
+    <div class="modal-card">
+      <div class="modal-head"><h2>O‘chirish</h2><button class="modal-close" type="button" data-cancel-delete aria-label="Yopish">×</button></div>
+      <p id="deleteMessage" class="modal-lead"></p>
+      <div class="modal-actions"><button class="btn btn--ghost" type="button" data-cancel-delete>Bekor qilish</button><button class="btn btn--danger" type="button" id="deleteConfirmBtn">O‘chirish</button></div>
+    </div>
+  </dialog>
+  <script src="./firebase-config.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
